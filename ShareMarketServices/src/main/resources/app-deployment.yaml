@@ -17,8 +17,22 @@ spec:
           image: andy999/shareserviceproj:release06
           ports:
             - containerPort: 8080
+#          readinessProbe:
+#            initialDelaySeconds: 120
+#            timeoutSeconds: 5
+#            failureThreshold: 10
+#            httpGet:
+#              path: /
+#              port: 30119
+#          livenessProbe:
+#            initialDelaySeconds: 120
+#            timeoutSeconds: 5
+#            failureThreshold: 10
+#            httpGet:
+#              path: /
+#              port: 30119
           env:   # Setting Enviornmental Variables
-            - name: DB_HOST   # Setting Database host address from configMap
+            - name: DB_HOST   # Setting Database host address from configMapa
               valueFrom :
                 configMapKeyRef :
                   name : db-config
@@ -54,6 +68,6 @@ spec:
   ports:
     - protocol: "TCP"
       port: 8080 # The port that the service is running on in the cluster
-      targetPort: 8080 # The port exposed by the service
-      nodePort: 30119
+      targetPort: 8080 # The port exposed by the service(POD)
+      nodePort: 30119 #The exposed NodePOrt which will ultimately used from browser or Postman as it is a port of Node (Range 30000 - 32767)
   type: NodePort # type of the service.
