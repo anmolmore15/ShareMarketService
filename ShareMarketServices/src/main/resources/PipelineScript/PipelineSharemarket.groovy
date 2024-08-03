@@ -9,7 +9,7 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout GIT Branch') {
             steps {
                 script {
                     // Checkout from GitHub repository using the personal access token
