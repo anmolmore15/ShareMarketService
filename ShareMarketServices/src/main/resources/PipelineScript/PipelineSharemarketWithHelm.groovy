@@ -4,7 +4,7 @@ pipeline {
     environment {
         PROJECT_ID = 'my-first-project-150619'
         CLUSTER_NAME = 'sharemarket-service-cluster'
-        COMPUTE_ZONE = 'europe-southwest1-c'
+        COMPUTE_ZONE = 'us-central1-c'
         HELM_CHART_NAME = 'sharemarkethelmchart'
         RELEASE_NAME = 'your-helm-release-name'
         DOCKER_REGISTRY = 'registry.hub.docker.com/andy999' // Your Docker registry URL
@@ -53,7 +53,9 @@ pipeline {
                         //     error "Failed to extract the full version. Extracted version: ${version}"
                         // }
 
-                        env.IMAGE_TAG = version // Set the image tag dynamically
+                        def modifiedVersion = version.toLowerCase().replace('.', '-')
+
+                        env.IMAGE_TAG = 'sharemarketservices-' + modifiedVersion // Set the image tag dynamically
 
                         // Print the extracted version
                         echo "Extracted version: ${version}"
@@ -104,14 +106,17 @@ pipeline {
 
         stage('Deploy with Helm') {
             steps {
-                script {
-                    // Create or update Helm release
-                    sh """
+                dir('ShareMarketServices') {
+                    script {
+                        // Create or update Helm release
+                        sh """
                     helm upgrade --install ${IMAGE_TAG} ./${HELM_CHART_NAME} \
                     --set image.repository=${DOCKER_REGISTRY}/${IMAGE_NAME} \
                     --set image.tag=${IMAGE_TAG}
                     """
+                    }
                 }
+
             }
         }
     }
