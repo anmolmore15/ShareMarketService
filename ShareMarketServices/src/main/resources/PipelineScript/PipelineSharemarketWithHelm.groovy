@@ -2,12 +2,15 @@ pipeline {
     agent any
 
     environment {
+        PROJECT_ID = 'my-first-project-150619'
+        CLUSTER_NAME = 'sharemarket-service-cluster'
+        COMPUTE_ZONE = 'europe-southwest1-c'
+        HELM_CHART_NAME = 'sharemarkethelmchart'
+        RELEASE_NAME = 'your-helm-release-name'
         DOCKER_REGISTRY = 'registry.hub.docker.com/andy999' // Your Docker registry URL
         IMAGE_NAME = 'shareserviceproj' // Base name of your Docker image
         GCP_SERVICE_ACCOUNT_KEY = credentials('gcp-service-account-key') // Jenkins credentials ID
         GITHUB_TOKEN = credentials('github-token') // Reference the token stored in Jenkins
-        PROJECT_ID = 'my-first-project-150619'
-        CLUSTER_NAME = 'your-gke-cluster-name'
     }
 
     stages {
@@ -58,7 +61,6 @@ pipeline {
                 }
             }
         }
-
         stage('Build Docker Image with Jib') {
             steps {
                 dir('ShareMarketServices') { // Adjusted to include the 'sharefolder' directory
@@ -77,6 +79,20 @@ pipeline {
             }
         }
 
+        stage('Configure GCP') {
+            steps {
+                script {
+                    // Authenticate to GCP
+                    withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY')]) {
+                        sh "gcloud auth activate-service-account --key-file=$GCP_KEY"
+                    }
+                    sh "gcloud config set project ${PROJECT_ID}"
+                    sh "gcloud config set compute/zone ${COMPUTE_ZONE}"
+                    sh "gcloud container clusters get-credentials ${CLUSTER_NAME}"
+                }
+            }
+        }
+
         stage('Push Docker Image') {
             steps {
                 script {
@@ -86,5 +102,26 @@ pipeline {
             }
         }
 
+        stage('Deploy with Helm') {
+            steps {
+                script {
+                    // Create or update Helm release
+                    sh """
+                    helm upgrade --install ${IMAGE_TAG} ./${HELM_CHART_NAME} \
+                    --set image.repository=${DOCKER_REGISTRY}/${IMAGE_NAME} \
+                    --set image.tag=${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
     }
 }
